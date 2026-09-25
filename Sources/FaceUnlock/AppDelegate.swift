@@ -21,6 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var currentStatus: RecognitionStatus = .idle
 
     private var enrollmentWindow: NSWindow?
+    private var watchingWindow: NSWindow?
+    private var watchingModel: WatchingModel?
 
     // MARK: - Lifecycle
 
@@ -56,13 +58,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             let template = self.store?.load()
             let engine = RecognitionEngine(embedder: self.embedder, template: template)
+            let model = WatchingModel(session: self.camera.session)
             engine.onStatusChange = { [weak self] status in
                 DispatchQueue.main.async { self?.handleStatus(status) }
             }
+            engine.onUpdate = { [weak self] update in
+                DispatchQueue.main.async { self?.watchingModel?.apply(update) }
+            }
             self.engine = engine
+            self.watchingModel = model
             engine.begin()
             self.camera.start()
             self.isWatching = true
+            self.openWatchingWindow(model: model)
             self.rebuildMenu()
         }
     }
@@ -74,8 +82,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine = nil
         isWatching = false
         currentStatus = .idle
+        if let window = watchingWindow {
+            watchingWindow = nil
+            window.close()
+        }
+        watchingModel = nil
         updateStatusIcon()
         rebuildMenu()
+    }
+
+    private func openWatchingWindow(model: WatchingModel) {
+        if let window = watchingWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let hosting = NSHostingController(rootView: WatchingView(model: model))
+        let window = NSWindow(contentViewController: hosting)
+        window.title = "FaceUnlock"
+        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.setContentSize(NSSize(width: 380, height: 470))
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        watchingWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func handleStatus(_ status: RecognitionStatus) {
@@ -207,8 +239,13 @@ extension AppDelegate: NSMenuDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
-        if (notification.object as? NSWindow) === enrollmentWindow {
+        let window = notification.object as? NSWindow
+        if window === enrollmentWindow {
             enrollmentWindow = nil
+        } else if window === watchingWindow {
+            // Closing the window is the same as stopping watching.
+            watchingWindow = nil
+            stopWatching()
         }
     }
 }
