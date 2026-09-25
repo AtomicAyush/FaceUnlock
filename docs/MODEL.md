@@ -55,23 +55,37 @@ cd ~/code/FaceUnlock
 python3 -m venv Model/.venv
 source Model/.venv/bin/activate
 pip install --upgrade pip
-# Let the resolver pick a torch that coremltools accepts:
-pip install coremltools onnx onnx2torch torch
+pip install coremltools onnx onnx2torch onnxruntime numpy pillow
+# coremltools 9 is tested against torch 2.7; the latest torch breaks onnx2torch's
+# torchvision import, so pin the matched pair:
+pip install "torch==2.7.0" "torchvision==0.22.0"
 ```
 
-Then convert (SFace shown; the exact preprocessing values are baked into the
-Core ML input so the Swift side just passes the aligned 112×112 image):
+Then convert with `scripts/convert_model.py`:
 
 ```bash
 python scripts/convert_model.py \
-    --onnx face_recognition_sface_2021dec.onnx \
+    --onnx Model/face_recognition_sface_2021dec.onnx \
     --out Model/FaceEmbedding.mlpackage
 ```
 
-`scripts/convert_model.py` will be added alongside this doc when you approve a
-model; it loads the ONNX graph, traces it to Core ML, bakes in the model's
-normalization, and prints a numerical check comparing the ONNX and Core ML
-outputs on a sample image (they must agree to a few decimals).
+It loads the ONNX via onnx2torch, traces it, converts to a Core ML **ML Program**
+(FP16), and runs a numerical self-check: it feeds the same input to onnxruntime
+and to the converted model and fails if their 128-D outputs disagree.
+
+**What the converter bakes in (verified against the ONNX graph and OpenCV source):**
+
+- **Normalization is inside the model.** The ONNX graph's first two ops are
+  `(x − 127.5) × 0.0078125` (i.e. `(x − 127.5) / 128`), so the Core ML image input
+  takes **raw 0–255 pixels** (`scale=1, bias=0`) and the network normalizes itself.
+- **Channel order is RGB.** OpenCV's `FaceRecognizerSF::feature` calls
+  `blobFromImage(..., swapRB=true, ...)`, feeding the network RGB, so the Core ML
+  input uses `color_layout=RGB`. The app just passes a plain 112×112 crop.
+- **Match threshold:** cosine **0.363** (OpenCV's documented value), unchanged by
+  the FP16 conversion.
+
+Last validated run: embedding dimension **128**, cosine(onnx, coreml)
+**0.999995**, max abs error **0.0044** — FP16 is well within tolerance.
 
 ## After conversion
 
@@ -82,5 +96,7 @@ open build/FaceUnlock.app  # then use "Enroll Face…" from the menu bar
 
 ---
 
-**Status:** no model is downloaded yet. This file describes exactly what will be
-fetched so it can be approved first.
+**Status:** SFace (Option A) has been downloaded, checksum-verified, and converted
+to `Model/FaceEmbedding.mlpackage`. The model file itself is not committed (it is
+git-ignored); regenerate it with the steps above. Run `./scripts/build_app.sh`,
+then use "Enroll Face…" from the menu bar.
