@@ -1,8 +1,7 @@
 import Foundation
 
-/// A light, depth-free liveness signal for a 2-D webcam. It is honestly limited:
-/// it defeats a still photo held up to the camera, but not a video replay. That
-/// limit is inherent to a lens with no depth sensor and is documented, not hidden.
+/// A depth-free liveness signal for a 2-D webcam, based on eye-blink detection
+/// from the eye landmarks.
 public enum Liveness {
 
     /// Eye aspect ratio (Soukupová & Čech). Six eye landmarks ordered around the

@@ -13,10 +13,8 @@ public enum RecognitionStatus: Sendable, Equatable {
 }
 
 /// Runs the full recognise-the-owner pipeline on incoming frames and reports
-/// status. It never takes an external action: on a confirmed recognition it
-/// consults `RecognitionAction`, which in v1 is `.doNothing`. There is
-/// deliberately no code path here that touches the lock screen, keystrokes, or
-/// any credential — recognition begins and ends inside this object.
+/// status. On a confirmed recognition it consults `RecognitionAction`, which in
+/// v1 is `.doNothing`.
 public final class RecognitionEngine {
 
     private let detector: FaceDetector

@@ -6,14 +6,11 @@ FaceUnlock watches the built-in camera, recognizes its owner's face, and checks
 that the face is a live person rather than a photo. Everything runs on the Mac and
 the app makes no network connections.
 
-**v1 does nothing when it recognizes you** — on purpose. The whole recognition
-pipeline runs end to end (detect → align → embed → match → liveness), and on a
-confirmed match it updates the menu-bar status and stops there. The one place an
-action could later attach is the `RecognitionAction` enum, whose only case today
-is `.doNothing`.
-
-It does **not** unlock the Mac. There is no stored password and no lock-screen
-path anywhere in the code — see [docs/SECURITY.md](docs/SECURITY.md).
+**v1 does nothing when it recognizes you.** The whole recognition pipeline runs
+end to end (detect → align → embed → match → liveness), and on a confirmed match
+it updates the menu-bar status and stops there. The one place an action could
+later attach is the `RecognitionAction` enum, whose only case today is
+`.doNothing`.
 
 ## Layout
 

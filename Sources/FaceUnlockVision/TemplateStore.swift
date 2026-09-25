@@ -1,12 +1,8 @@
 import Foundation
 import FaceUnlockCore
 
-/// Persists the owner's enrolled `FaceTemplate` to Application Support.
-///
-/// v1 stores it as JSON with owner-only file permissions (0600). The stored data
-/// is the owner's own face embeddings — not a credential, and never the login
-/// password (this app has none). Encrypting the template at rest behind Touch ID
-/// is a planned follow-up, tracked in docs/SECURITY.md.
+/// Persists the owner's enrolled `FaceTemplate` to Application Support as JSON
+/// with owner-only file permissions (0600).
 public final class TemplateStore {
 
     private let fileURL: URL

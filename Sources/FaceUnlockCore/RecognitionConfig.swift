@@ -29,10 +29,9 @@ public struct RecognitionConfig: Codable, Sendable, Equatable {
     public static let `default` = RecognitionConfig()
 }
 
-/// What the app does when it recognises the owner. v1 ships as `.doNothing`
-/// on purpose: the recognition pipeline runs end to end and takes no action.
-/// The enum is the single, explicit seam where a future action would attach —
-/// there is no lock-screen or credential path anywhere in this codebase.
+/// What the app does when it recognises the owner. v1 ships as `.doNothing`:
+/// the recognition pipeline runs end to end and takes no action. This enum is
+/// the single seam where a future action would attach.
 public enum RecognitionAction: String, Codable, Sendable, CaseIterable {
     /// Recognise, update the menu-bar status, and otherwise do nothing.
     case doNothing
