@@ -9,15 +9,13 @@ struct CameraPreview: NSViewRepresentable {
 
     func makeNSView(context: Context) -> PreviewNSView {
         let view = PreviewNSView()
-        view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspectFill
-        view.applyMirror(mirrored)
+        view.attach(session: session, mirrored: mirrored)
         return view
     }
 
     func updateNSView(_ nsView: PreviewNSView, context: Context) {
-        nsView.previewLayer.session = session
-        nsView.applyMirror(mirrored)
+        nsView.attach(session: session, mirrored: mirrored)
     }
 
     final class PreviewNSView: NSView {
@@ -32,11 +30,21 @@ struct CameraPreview: NSViewRepresentable {
 
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-        func applyMirror(_ mirrored: Bool) {
-            guard let connection = previewLayer.connection,
-                  connection.isVideoMirroringSupported else { return }
-            connection.automaticallyAdjustsVideoMirroring = false
-            connection.isVideoMirrored = mirrored
+        /// Attach the session and set mirroring, but only when something actually
+        /// changed — re-assigning the session mutates its connection set, which we
+        /// must not do on every SwiftUI update. Runs on the main thread.
+        func attach(session: AVCaptureSession, mirrored: Bool) {
+            if previewLayer.session !== session {
+                previewLayer.session = session
+            }
+            if let connection = previewLayer.connection, connection.isVideoMirroringSupported {
+                if connection.automaticallyAdjustsVideoMirroring {
+                    connection.automaticallyAdjustsVideoMirroring = false
+                }
+                if connection.isVideoMirrored != mirrored {
+                    connection.isVideoMirrored = mirrored
+                }
+            }
         }
 
         override func layout() {

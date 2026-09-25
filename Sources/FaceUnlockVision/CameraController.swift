@@ -81,14 +81,23 @@ public final class CameraController: NSObject, AVCaptureVideoDataOutputSampleBuf
         isConfigured = true
     }
 
+    // Session lifecycle (start/stop) and preview attachment must not run
+    // concurrently with each other: AVCaptureSession enumerates its connections
+    // while starting, and attaching a preview layer mutates that set. Both the
+    // callers and the preview attach are on the main thread, so we keep start and
+    // stop on the main thread too — everything session-mutating is serialized
+    // there. Frame delivery stays on its own queue and is unaffected.
     public func start() {
-        guard isConfigured, !session.isRunning else { return }
-        frameQueue.async { [session] in session.startRunning() }
+        guard isConfigured else { return }
+        onMain { if !self.session.isRunning { self.session.startRunning() } }
     }
 
     public func stop() {
-        guard session.isRunning else { return }
-        frameQueue.async { [session] in session.stopRunning() }
+        onMain { if self.session.isRunning { self.session.stopRunning() } }
+    }
+
+    private func onMain(_ work: @escaping () -> Void) {
+        if Thread.isMainThread { work() } else { DispatchQueue.main.async(execute: work) }
     }
 
     public func captureOutput(_ output: AVCaptureOutput,
