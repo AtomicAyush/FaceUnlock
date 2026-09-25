@@ -1,0 +1,24 @@
+# Xcode / SwiftPM
+build/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.dSYM.zip
+*.dSYM
+
+# Face model: downloaded and converted locally by scripts/, never committed
+Model/*.onnx
+Model/*.pt
+Model/*.pth
+Model/*.mlpackage
+Model/*.mlmodelc
+Model/.venv/
+
+# macOS
+.DS_Store
