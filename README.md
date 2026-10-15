@@ -1,5 +1,32 @@
 # FaceUnlock
 
+<p>
+  <img alt="macOS" src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white">
+  <img alt="Swift" src="https://img.shields.io/badge/Swift-6.4-F05138?logo=swift&logoColor=white">
+  <img alt="ML" src="https://img.shields.io/badge/ML-Vision%20%C2%B7%20Core%20ML-34C759">
+</p>
+
+> **Fully on-device face recognition for macOS, with liveness checks that reject photos. No network, ever.**
+
+### Highlights
+- **Complete recognition pipeline:** Apple Vision face and landmark detection → 5-point similarity alignment → 128-dimensional embedding from an SFace model running in Core ML → cosine matching against enrolled templates.
+- **Liveness:** blink detection from the eye aspect ratio, so a printed photo or a phone screen doesn't pass.
+- **Private by design:** camera frames never leave the Mac; the only third-party artifact is the model file, fetched once and checksum-verified.
+- **Testable architecture:** pure math (alignment, matching, liveness) lives in `FaceUnlockCore` with XCTest coverage, separate from the camera and Vision layer.
+
+```mermaid
+flowchart LR
+  A[Camera frame] --> B[Vision: face + landmarks]
+  B --> C[5-point alignment]
+  C --> D[Core ML embedding · 128-d]
+  D --> E[Cosine match vs. enrolled templates]
+  B --> F[Blink liveness · eye aspect ratio]
+  E --> G{Owner and live?}
+  F --> G
+```
+
+---
+
 An on-device face recognizer for macOS, in the menu bar.
 
 FaceUnlock watches the built-in camera, recognizes its owner's face, and checks
